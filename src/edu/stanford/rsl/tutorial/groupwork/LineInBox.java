@@ -21,7 +21,19 @@ public class LineInBox {
 		// First Point
 		boxIntersects[0][1] = intersect_y;
 		boxIntersects[0][0] = 0;
+		if (Double.isInfinite(gradient)) {
+			if (intersect[0] >= 0 && intersect[0] <= box_width) {
+				boxIntersects[0][0] = intersect[0];
+				boxIntersects[0][1] = 0;
+				boxIntersects[1][0] = intersect[0];
+				boxIntersects[1][1] = box_height;
+				return boxIntersects;
+			} else {
+				return notInBox();
+			}
+		}
 		if (boxIntersects[0][1] < 0 || boxIntersects[0][1] > box_height) {
+
 			if (gradient > 0) {
 				boxIntersects[0][0] = (0 - intersect_y) / gradient;
 				boxIntersects[0][1] = 0;
@@ -72,6 +84,10 @@ public class LineInBox {
 					}
 				}
 			}
+		}
+		if (boxIntersects[0][1] < 0) {
+			int z = 0;
+			z++;
 		}
 		return boxIntersects;
 	}
