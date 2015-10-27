@@ -83,11 +83,20 @@ public class LineInBox {
 						boxIntersects[1][0] = (0 - intersect_y) / gradient;
 					}
 				}
+			} else {
+				boxIntersects[1][1] = box_width * gradient + intersect_y;
+				boxIntersects[1][0] = box_width;
+				if (boxIntersects[1][1] < 0 || boxIntersects[1][1] > box_height) {
+					if (gradient < 0) {
+						boxIntersects[1][1] = 0;
+						boxIntersects[1][0] = (0 - intersect_y)
+								/ gradient;
+					} else {
+						boxIntersects[1][1] = box_height;
+						boxIntersects[1][0] = (box_height - intersect_y) / gradient;
+					}
+				}
 			}
-		}
-		if (boxIntersects[0][1] < 0) {
-			int z = 0;
-			z++;
 		}
 		return boxIntersects;
 	}

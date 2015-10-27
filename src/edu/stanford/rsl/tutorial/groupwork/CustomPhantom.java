@@ -13,8 +13,8 @@ public class CustomPhantom extends Grid2D {
 
 		int[] offset = { width / 2, height / 2 };
 		float intensities[] = { 0.2f, 0.6f, 1.0f };
-		int ring_radius_radius = 50;
-		int square_size = 90;
+		int ring_radius_radius = 100;
+		int square_size = 160;
 		int[] line_pos = { 50, 100 };
 
 		configure(offset, intensities, ring_radius_radius, square_size,
