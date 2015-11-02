@@ -41,6 +41,7 @@ public class Detector {
 	}
 
 	public Grid2D getSinogram(CustomPhantom phantom) {
+		long time = System.currentTimeMillis() + 7000;
 		Grid2D sinogram = new Grid2D(projections, pixels);
 		sinogram.setOrigin(0, (-pixels / 2 + 0.5) * spacing);
 		sinogram.setSpacing(180.0f / projections, spacing);
@@ -50,13 +51,12 @@ public class Detector {
 					/ Math.cos(Math.toRadians(angle));
 			for (double pixel = sinogram.getOrigin()[1]; pixel <= sinogram
 					.getOrigin()[1] + pixels * spacing; pixel++) {
-				if (projection == 0) {
-					int x = 0;
+				if (System.currentTimeMillis() > time) {
+					int x = 2;
 					x++;
 				}
-				double[] pixel_pos = {
-						Math.cos(Math.toRadians(angle)) * pixel * -1,
-						Math.sin(Math.toRadians(angle)) * pixel };
+				double[] pixel_pos = { Math.sin(Math.toRadians(angle)) * pixel,
+						Math.cos(Math.toRadians(angle)) * pixel * -1 };
 				double[][] intersects = new LineInBox(phantom.indexToPhysical(
 						phantom.getWidth() - 1, phantom.getHeight() - 1)[0],
 						phantom.indexToPhysical(phantom.getWidth() - 1,
@@ -66,22 +66,30 @@ public class Detector {
 						.getBoxIntersects();
 				if (intersects[0][0] == -1 && intersects[0][1] == -1
 						&& intersects[1][0] == -1 && intersects[1][1] == -1) {
-					sinogram.setAtIndex(projection, (int) pixel, 0);
+					sinogram.setAtIndex(
+							(int) sinogram.physicalToIndex(angle, pixel)[0],
+							(int) sinogram.physicalToIndex(angle, pixel)[1], 0);
 					continue;
 				}
-				double x_step = Math.cos(Math.toRadians(90 - angle));
-				double y_step = Math.sin(Math.toRadians(270 - angle));
+				double x_step = Math.cos(Math.toRadians(90 - angle))
+						* phantom.getSpacing()[0];
+				double y_step = Math.sin(Math.toRadians(270 - angle))
+						* phantom.getSpacing()[1];
 				int steps = (int) Math.floor(Math.sqrt(Math.pow(
 						intersects[0][0] - intersects[1][0], 2)
 						+ Math.pow(intersects[0][1] - intersects[1][1], 2)));
 				float value = 0.0f;
 				for (int element = 0; element < steps; element++) {
+					double x_real = intersects[0][0] + element * x_step;
+					double y_real = intersects[0][1] + element * y_step;
 					value += InterpolationOperators.interpolateLinear(phantom,
-							intersects[0][0] + element * x_step,
-							intersects[0][1] + element * y_step);
+							phantom.physicalToIndex(x_real, y_real)[0],
+							phantom.physicalToIndex(x_real, y_real)[1]);
 				}
 				value = value / steps;
-				sinogram.setAtIndex(projection, (int) pixel, value);
+				sinogram.setAtIndex(
+						(int) sinogram.physicalToIndex(angle, pixel)[0],
+						(int) sinogram.physicalToIndex(angle, pixel)[1], value);
 
 			}
 		}
