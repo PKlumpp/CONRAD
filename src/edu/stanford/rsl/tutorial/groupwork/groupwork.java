@@ -10,7 +10,7 @@ public class groupwork {
 		phantom1.setSpacing(1.0f, 1.0f);
 		phantom1.show();
 		Detector detector = new Detector(500, 500, 1);
-		detector.getSinogram(phantom1).show();
+		//detector.getSinogram(phantom1).show();
 		new ImageJ();
 		//phantom1.show();
 	}
