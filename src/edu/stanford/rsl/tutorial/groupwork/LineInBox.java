@@ -1,17 +1,25 @@
 package edu.stanford.rsl.tutorial.groupwork;
 
+import com.sun.org.apache.xpath.internal.operations.Number;
+
+import thredds.wcs.v1_1_0.XMLwriter.ExceptionCodes;
+
 public class LineInBox {
-	private int box_width;
-	private int box_height;
+	private double box_right;
+	private double box_top;
+	private double box_bottom;
+	private double box_left;
 	private double gradient;
 	private double[] intersect;
 
-	public LineInBox(int box_width, int box_height, double gradient,
+	public LineInBox(double box_right, double box_top, double box_left, double box_bottom, double gradient,
 			double[] intersect) {
-		this.box_width = box_width;
-		this.box_height = box_height;
+		this.box_right = box_right;
+		this.box_top = box_top;
 		this.gradient = gradient;
 		this.intersect = intersect;
+		this.box_bottom = box_bottom;
+		this.box_left = box_left;
 	}
 
 	public double[][] getBoxIntersects() {
@@ -19,81 +27,82 @@ public class LineInBox {
 		double intersect_y = intersect[1] - gradient * intersect[0];
 
 		// First Point
-		boxIntersects[0][1] = intersect_y;
-		boxIntersects[0][0] = 0;
+		
+		boxIntersects[0][1] = box_left * gradient + intersect_y;
+		boxIntersects[0][0] = box_left;
 		if (Double.isInfinite(gradient)) {
-			if (intersect[0] >= 0 && intersect[0] <= box_width) {
+			if (intersect[0] >= box_left && intersect[0] <= box_right) {
 				boxIntersects[0][0] = intersect[0];
-				boxIntersects[0][1] = 0;
+				boxIntersects[0][1] = box_bottom;
 				boxIntersects[1][0] = intersect[0];
-				boxIntersects[1][1] = box_height;
+				boxIntersects[1][1] = box_top;
 				return boxIntersects;
 			} else {
 				return notInBox();
 			}
 		}
-		if (boxIntersects[0][1] < 0 || boxIntersects[0][1] > box_height) {
+		if (boxIntersects[0][1] < box_bottom || boxIntersects[0][1] > box_top) {
 
 			if (gradient > 0) {
-				boxIntersects[0][0] = (0 - intersect_y) / gradient;
-				boxIntersects[0][1] = 0;
+				boxIntersects[0][0] = (box_bottom - intersect_y) / gradient;
+				boxIntersects[0][1] = box_bottom;
 			} else {
-				boxIntersects[0][0] = (box_height - intersect_y) / gradient;
-				boxIntersects[0][1] = box_height;
+				boxIntersects[0][0] = (box_top - intersect_y) / gradient;
+				boxIntersects[0][1] = box_top;
 			}
-			if (boxIntersects[0][0] < 0 || boxIntersects[0][0] > box_width) {
+			if (boxIntersects[0][0] < box_left || boxIntersects[0][0] > box_right) {
 				return notInBox();
 			}
 		}
 
 		// Second Point
-		if (boxIntersects[0][0] == 0) {
+		if (boxIntersects[0][0] == box_left) {
 			if (gradient > 0) {
-				if (!((box_height - intersect_y) / gradient < 0 || (box_height - intersect_y)
-						/ gradient > box_width)) {
-					boxIntersects[1][0] = (box_height - intersect_y) / gradient;
-					boxIntersects[1][1] = box_height;
+				if (!((box_top - intersect_y) / gradient < 0 || (box_top - intersect_y)
+						/ gradient > box_right)) {
+					boxIntersects[1][0] = (box_top - intersect_y) / gradient;
+					boxIntersects[1][1] = box_top;
 					return boxIntersects;
 				} else {
-					boxIntersects[1][0] = box_width;
-					boxIntersects[1][1] = gradient * box_width + intersect_y;
+					boxIntersects[1][0] = box_right;
+					boxIntersects[1][1] = gradient * box_right + intersect_y;
 					return boxIntersects;
 				}
 			} else {
-				if (!((0 - intersect_y) / gradient < 0 || (0 - intersect_y)
-						/ gradient > box_width)) {
-					boxIntersects[1][0] = (0 - intersect_y) / gradient;
-					boxIntersects[1][1] = 0;
+				if (!((box_bottom - intersect_y) / gradient < 0 || (box_bottom - intersect_y)
+						/ gradient > box_right)) {
+					boxIntersects[1][0] = (box_bottom - intersect_y) / gradient;
+					boxIntersects[1][1] = box_bottom;
 				} else {
-					boxIntersects[1][0] = box_width;
-					boxIntersects[1][1] = gradient * box_width + intersect_y;
+					boxIntersects[1][0] = box_right;
+					boxIntersects[1][1] = gradient * box_right + intersect_y;
 				}
 			}
 		} else {
-			if (boxIntersects[0][1] == 0) {
-				boxIntersects[1][1] = box_width * gradient + intersect_y;
-				boxIntersects[1][0] = box_width;
-				if (boxIntersects[1][1] < 0 || boxIntersects[1][1] > box_height) {
+			if (boxIntersects[0][1] == box_bottom) {
+				boxIntersects[1][1] = box_right * gradient + intersect_y;
+				boxIntersects[1][0] = box_right;
+				if (boxIntersects[1][1] < box_bottom || boxIntersects[1][1] > box_top) {
 					if (gradient > 0) {
-						boxIntersects[1][1] = box_height;
-						boxIntersects[1][0] = (box_height - intersect_y)
+						boxIntersects[1][1] = box_top;
+						boxIntersects[1][0] = (box_top - intersect_y)
 								/ gradient;
 					} else {
-						boxIntersects[1][1] = 0;
-						boxIntersects[1][0] = (0 - intersect_y) / gradient;
+						boxIntersects[1][1] = box_bottom;
+						boxIntersects[1][0] = (box_bottom - intersect_y) / gradient;
 					}
 				}
 			} else {
-				boxIntersects[1][1] = box_width * gradient + intersect_y;
-				boxIntersects[1][0] = box_width;
-				if (boxIntersects[1][1] < 0 || boxIntersects[1][1] > box_height) {
+				boxIntersects[1][1] = box_right * gradient + intersect_y;
+				boxIntersects[1][0] = box_right;
+				if (boxIntersects[1][1] < box_bottom || boxIntersects[1][1] > box_top) {
 					if (gradient < 0) {
-						boxIntersects[1][1] = 0;
-						boxIntersects[1][0] = (0 - intersect_y)
+						boxIntersects[1][1] = box_bottom;
+						boxIntersects[1][0] = (box_bottom - intersect_y)
 								/ gradient;
 					} else {
-						boxIntersects[1][1] = box_height;
-						boxIntersects[1][0] = (box_height - intersect_y) / gradient;
+						boxIntersects[1][1] = box_top;
+						boxIntersects[1][0] = (box_top - intersect_y) / gradient;
 					}
 				}
 			}

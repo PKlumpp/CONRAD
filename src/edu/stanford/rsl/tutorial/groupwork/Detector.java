@@ -41,32 +41,32 @@ public class Detector {
 	}
 
 	public Grid2D getSinogram(CustomPhantom phantom) {
-		float[] center = { phantom.getWidth() / 2, phantom.getHeight() / 2 };
 		Grid2D sinogram = new Grid2D(projections, pixels);
-		for (int i = 0; i < projections; i++) {
-			sinogram.setOrigin(0,pixels/2-0.5);
-			sinogram.setSpacing(180.0f/projections, spacing);
-		}
+		sinogram.setOrigin(0, (-pixels / 2 + 0.5) * spacing);
+		sinogram.setSpacing(180.0f / projections, spacing);
 		for (int projection = 0; projection < projections; projection++) {
 			float angle = 180f * projection / projections;
-			double gradient = Math.sin(Math.toRadians(angle + 90))
-					/ Math.cos(Math.toRadians(angle + 90));
-			for (int pixel = 0; pixel < pixels; pixel++) {
+			double gradient = Math.sin(Math.toRadians(angle))
+					/ Math.cos(Math.toRadians(angle));
+			for (double pixel = sinogram.getOrigin()[1]; pixel <= sinogram
+					.getOrigin()[1] + pixels * spacing; pixel++) {
 				if (projection == 0) {
 					int x = 0;
 					x++;
 				}
 				double[] pixel_pos = {
-						Math.cos(Math.toRadians(angle)) * spacing
-								* (pixel - pixels / 2) + center[0],
-						Math.sin(Math.toRadians(angle)) * spacing
-								* (pixel - pixels / 2) + center[1] };
-				double[][] intersects = new LineInBox(phantom.getWidth(),
-						phantom.getHeight(), gradient, pixel_pos)
+						Math.cos(Math.toRadians(angle)) * pixel * -1,
+						Math.sin(Math.toRadians(angle)) * pixel };
+				double[][] intersects = new LineInBox(phantom.indexToPhysical(
+						phantom.getWidth() - 1, phantom.getHeight() - 1)[0],
+						phantom.indexToPhysical(phantom.getWidth() - 1,
+								phantom.getHeight() - 1)[1],
+						phantom.indexToPhysical(0, 0)[0],
+						phantom.indexToPhysical(0, 0)[1], gradient, pixel_pos)
 						.getBoxIntersects();
 				if (intersects[0][0] == -1 && intersects[0][1] == -1
 						&& intersects[1][0] == -1 && intersects[1][1] == -1) {
-					sinogram.setAtIndex(projection, pixel, 0);
+					sinogram.setAtIndex(projection, (int) pixel, 0);
 					continue;
 				}
 				double x_step = Math.cos(Math.toRadians(90 - angle));
@@ -81,7 +81,7 @@ public class Detector {
 							intersects[0][1] + element * y_step);
 				}
 				value = value / steps;
-				sinogram.setAtIndex(projection, pixel, value);
+				sinogram.setAtIndex(projection, (int) pixel, value);
 
 			}
 		}
