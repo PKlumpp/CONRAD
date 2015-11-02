@@ -1,5 +1,7 @@
 package edu.stanford.rsl.tutorial.groupwork;
 
+import com.sun.scenario.effect.impl.prism.PrReflectionPeer;
+
 import weka.filters.unsupervised.attribute.Center;
 import edu.stanford.rsl.conrad.data.Grid;
 import edu.stanford.rsl.conrad.data.numeric.Grid2D;
@@ -41,7 +43,7 @@ public class Detector {
 	}
 
 	public Grid2D getSinogram(CustomPhantom phantom) {
-		long time = System.currentTimeMillis() + 7000;
+		long time = System.currentTimeMillis() + 10;
 		Grid2D sinogram = new Grid2D(projections, pixels);
 		sinogram.setOrigin(0, (-pixels / 2 + 0.5) * spacing);
 		sinogram.setSpacing(180.0f / projections, spacing);
@@ -50,20 +52,20 @@ public class Detector {
 			double gradient = Math.sin(Math.toRadians(angle))
 					/ Math.cos(Math.toRadians(angle));
 			for (double pixel = sinogram.getOrigin()[1]; pixel <= sinogram
-					.getOrigin()[1] + pixels * spacing; pixel++) {
-				if (System.currentTimeMillis() > time) {
+					.getOrigin()[1] + pixels * spacing; pixel+=spacing) {
+				double[] pixel_pos = { Math.sin(Math.toRadians(angle)) * pixel,
+						Math.cos(Math.toRadians(angle)) * pixel * -1 };
+				if (projection == 250 && pixel == 0.5) {
 					int x = 2;
 					x++;
 				}
-				double[] pixel_pos = { Math.sin(Math.toRadians(angle)) * pixel,
-						Math.cos(Math.toRadians(angle)) * pixel * -1 };
 				double[][] intersects = new LineInBox(phantom.indexToPhysical(
 						phantom.getWidth() - 1, phantom.getHeight() - 1)[0],
-						phantom.indexToPhysical(phantom.getWidth() - 1,
-								phantom.getHeight() - 1)[1],
+						phantom.indexToPhysical(0, 0)[1],
 						phantom.indexToPhysical(0, 0)[0],
-						phantom.indexToPhysical(0, 0)[1], gradient, pixel_pos)
-						.getBoxIntersects();
+						phantom.indexToPhysical(phantom.getWidth() - 1,
+								phantom.getHeight() - 1)[1], gradient,
+						pixel_pos).getBoxIntersects();
 				if (intersects[0][0] == -1 && intersects[0][1] == -1
 						&& intersects[1][0] == -1 && intersects[1][1] == -1) {
 					sinogram.setAtIndex(
@@ -71,10 +73,10 @@ public class Detector {
 							(int) sinogram.physicalToIndex(angle, pixel)[1], 0);
 					continue;
 				}
-				double x_step = Math.cos(Math.toRadians(90 - angle))
-						* phantom.getSpacing()[0];
-				double y_step = Math.sin(Math.toRadians(270 - angle))
-						* phantom.getSpacing()[1];
+				double x_step = Math.abs(Math.sin(Math.toRadians(270 - angle))
+						* phantom.getSpacing()[0]);
+				double y_step = Math.sin(Math.toRadians(angle+180)) * -Math.signum(gradient);
+				
 				int steps = (int) Math.floor(Math.sqrt(Math.pow(
 						intersects[0][0] - intersects[1][0], 2)
 						+ Math.pow(intersects[0][1] - intersects[1][1], 2)));
@@ -87,10 +89,18 @@ public class Detector {
 							phantom.physicalToIndex(x_real, y_real)[1]);
 				}
 				value = value / steps;
+				if (projection > 20 && value == 0) {
+					int x = 2;
+					x++;
+				}
 				sinogram.setAtIndex(
-						(int) sinogram.physicalToIndex(angle, pixel)[0],
-						(int) sinogram.physicalToIndex(angle, pixel)[1], value);
-
+						(int) Math.round(sinogram.physicalToIndex(angle, pixel)[0]),
+						(int) Math.round(sinogram.physicalToIndex(angle, pixel)[1]), value);
+				int test2 = (int) Math.round(sinogram.physicalToIndex(angle, pixel)[0]);
+				int test3 = (int) Math.round(sinogram.physicalToIndex(angle, pixel)[1]);
+				if (projection==251) {
+					int z = 0;
+				}
 			}
 		}
 		return sinogram;

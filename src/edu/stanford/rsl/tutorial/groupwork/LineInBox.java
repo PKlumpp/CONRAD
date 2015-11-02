@@ -58,7 +58,7 @@ public class LineInBox {
 		// Second Point
 		if (boxIntersects[0][0] == box_left) {
 			if (gradient > 0) {
-				if (!((box_top - intersect_y) / gradient < 0 || (box_top - intersect_y)
+				if (!((box_top - intersect_y) / gradient < box_left || (box_top - intersect_y)
 						/ gradient > box_right)) {
 					boxIntersects[1][0] = (box_top - intersect_y) / gradient;
 					boxIntersects[1][1] = box_top;
@@ -69,7 +69,7 @@ public class LineInBox {
 					return boxIntersects;
 				}
 			} else {
-				if (!((box_bottom - intersect_y) / gradient < 0 || (box_bottom - intersect_y)
+				if (!((box_bottom - intersect_y) / gradient < box_left || (box_bottom - intersect_y)
 						/ gradient > box_right)) {
 					boxIntersects[1][0] = (box_bottom - intersect_y) / gradient;
 					boxIntersects[1][1] = box_bottom;
