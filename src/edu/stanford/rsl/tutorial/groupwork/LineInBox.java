@@ -33,9 +33,9 @@ public class LineInBox {
 		if (Double.isInfinite(gradient)) {
 			if (intersect[0] >= box_left && intersect[0] <= box_right) {
 				boxIntersects[0][0] = intersect[0];
-				boxIntersects[0][1] = box_bottom;
+				boxIntersects[0][1] = box_top;
 				boxIntersects[1][0] = intersect[0];
-				boxIntersects[1][1] = box_top;
+				boxIntersects[1][1] = box_bottom;
 				return boxIntersects;
 			} else {
 				return notInBox();

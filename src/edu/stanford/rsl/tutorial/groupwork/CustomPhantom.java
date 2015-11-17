@@ -44,12 +44,12 @@ public class CustomPhantom extends Grid2D {
 						&& j >= width / 10 && i <= width / 10 * 9
 						&& j <= width / 10 * 9;
 				float intensity = 0.0f;
-				if (circle) {
-					intensity += intensities[0];
-				}
-				if (square) {
-					intensity += intensities[1];
-				}
+//				if (circle) {
+//					intensity += intensities[0];
+//				}
+//				if (square) {
+//					intensity += intensities[1];
+//				}
 				if (line) {
 					intensity += intensities[2];
 				}

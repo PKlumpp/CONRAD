@@ -1,6 +1,7 @@
 package edu.stanford.rsl.tutorial.groupwork;
 
 import com.jgoodies.forms.layout.Size;
+import com.sun.accessibility.internal.resources.accessibility;
 
 import edu.stanford.rsl.conrad.data.numeric.Grid1D;
 import edu.stanford.rsl.conrad.data.numeric.Grid1DComplex;
@@ -48,19 +49,23 @@ public class Detector {
 	public Grid2D getSinogram(CustomPhantom phantom) {
 		Grid2D sinogram = new Grid2D(projections, pixels);
 		sinogram.setOrigin(0, (-pixels / 2 + 0.5) * spacing);
-		sinogram.setSpacing(180.0f / projections, spacing);
+		sinogram.setSpacing(1, spacing);
 		for (int projection = 0; projection < projections; projection++) {
+			if (projection == 101) {
+				int x = 1;
+				x++;
+			}
 			float angle = 180f * projection / projections;
-			double gradient = Math.sin(Math.toRadians(angle))
-					/ Math.cos(Math.toRadians(angle));
-			double x_step = Math.abs(Math.sin(Math.toRadians(270 - angle))
+			double gradient = -Math.cos(Math.toRadians(angle))
+					/ Math.sin(Math.toRadians(angle));
+			double x_step = Math.abs(Math.sin(Math.toRadians(180 - angle))
 					* phantom.getSpacing()[0]);
-			double y_step = Math.sin(Math.toRadians(angle + 180))
-					* -Math.signum(gradient) * phantom.getSpacing()[1];
+			double y_step = Math.sin(Math.toRadians(angle + 270))
+					* phantom.getSpacing()[1];
 			for (double pixel = sinogram.getOrigin()[1]; pixel <= sinogram
 					.getOrigin()[1] + pixels * spacing; pixel += spacing) {
-				double[] pixel_pos = { Math.sin(Math.toRadians(angle)) * pixel,
-						Math.cos(Math.toRadians(angle)) * pixel * -1 };
+				double[] pixel_pos = { Math.cos(Math.toRadians(angle)) * pixel,
+						Math.sin(Math.toRadians(angle)) * pixel };
 				double[][] intersects = new LineInBox(phantom.indexToPhysical(
 						phantom.getWidth() - 1, phantom.getHeight() - 1)[0],
 						phantom.indexToPhysical(phantom.getWidth() - 1,
@@ -71,8 +76,9 @@ public class Detector {
 				if (intersects[0][0] == -1 && intersects[0][1] == -1
 						&& intersects[1][0] == -1 && intersects[1][1] == -1) {
 					sinogram.setAtIndex(
-							(int) sinogram.physicalToIndex(angle, pixel)[0],
-							(int) sinogram.physicalToIndex(angle, pixel)[1], 0);
+							(int) sinogram.physicalToIndex(projection, pixel)[0],
+							(int) sinogram.physicalToIndex(projection, pixel)[1],
+							0);
 					continue;
 				}
 
@@ -81,6 +87,12 @@ public class Detector {
 								/ phantom.getSpacing()[0], 2)
 						+ Math.pow((intersects[0][1] - intersects[1][1])
 								/ phantom.getSpacing()[1], 2)));
+				if (steps == 0) {
+					sinogram.setAtIndex((int) Math.round(sinogram.physicalToIndex(
+							projection, pixel)[0]), (int) Math.round(sinogram
+							.physicalToIndex(projection, pixel)[1]), 0f);
+					continue;
+				}
 				float value = 0.0f;
 				for (int element = 0; element < steps; element++) {
 					double x_real = intersects[0][0] + element * x_step;
@@ -91,20 +103,19 @@ public class Detector {
 				}
 				value = value / steps;
 				sinogram.setAtIndex((int) Math.round(sinogram.physicalToIndex(
-						angle, pixel)[0]), (int) Math.round(sinogram
-						.physicalToIndex(angle, pixel)[1]), value);
+						projection, pixel)[0]), (int) Math.round(sinogram
+						.physicalToIndex(projection, pixel)[1]), value);
 			}
 		}
 		return sinogram;
 	}
 
 	public Grid2D rampFilter(Grid2D sinogram) {
-
+		System.out.println(sinogram.getSpacing()[1]);
 		sinogram = transpose(sinogram);
-		System.out.println(sinogram.getHeight() + " " +  sinogram.getWidth());
+		System.out.println(sinogram.getSpacing()[1]);
 		Grid1DComplex filter = new Grid1DComplex(sinogram.getWidth(), true);
 		int filter_size = filter.getSize()[0];
-		System.out.println(filter.getSize()[0] + "   " + filter_size);
 		float filter_spacing = 1 / (spacing * filter_size);
 		for (int i = 0; i < filter_size / 2; i++) {
 			filter.setAtIndex(i, filter_spacing * i);
@@ -137,11 +148,37 @@ public class Detector {
 
 	public Grid2D transpose(Grid2D grid) {
 		Grid2D grid_transposed = new Grid2D(grid.getHeight(), grid.getWidth());
+		grid_transposed.setOrigin(grid.getOrigin()[1], grid.getOrigin()[0]);
+		grid_transposed.setSpacing(grid.getSpacing()[1], grid.getSpacing()[0]);
 		for (int i = 0; i < grid.getHeight(); i++) {
 			for (int j = 0; j < grid.getWidth(); j++) {
 				grid_transposed.setAtIndex(i, j, grid.getAtIndex(j, i));
 			}
 		}
 		return grid_transposed;
+	}
+
+	public Grid2D backproject(Grid2D sinogram, Grid2D result) {
+		for (int i = 0; i < result.getWidth(); i++) {
+			for (int j = 0; j < result.getHeight(); j++) {
+				for (int projection = 0; projection < projections; projection++) {
+					double angle = 180f * projection / projections;
+					double[] indices = result.indexToPhysical(i, j);
+					double x = indices[0];
+					double y = indices[1];
+					if (i == 100 && j == 300) {
+						int asd = 1;
+						asd++;
+					}
+					double s = x * Math.cos(angle) + y * Math.sin(angle);
+					double detector_index = sinogram.physicalToIndex(
+							projection, s)[1];
+					float value = InterpolationOperators.interpolateLinear(
+							sinogram, projection, detector_index);
+					result.addAtIndex(i, j, value);
+				}
+			}
+		}
+		return result;
 	}
 }
