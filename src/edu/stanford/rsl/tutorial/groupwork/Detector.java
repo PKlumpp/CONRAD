@@ -88,9 +88,10 @@ public class Detector {
 						+ Math.pow((intersects[0][1] - intersects[1][1])
 								/ phantom.getSpacing()[1], 2)));
 				if (steps == 0) {
-					sinogram.setAtIndex((int) Math.round(sinogram.physicalToIndex(
-							projection, pixel)[0]), (int) Math.round(sinogram
-							.physicalToIndex(projection, pixel)[1]), 0f);
+					sinogram.setAtIndex((int) Math.round(sinogram
+							.physicalToIndex(projection, pixel)[0]),
+							(int) Math.round(sinogram.physicalToIndex(
+									projection, pixel)[1]), 0f);
 					continue;
 				}
 				float value = 0.0f;
@@ -111,9 +112,7 @@ public class Detector {
 	}
 
 	public Grid2D rampFilter(Grid2D sinogram) {
-		System.out.println(sinogram.getSpacing()[1]);
 		sinogram = transpose(sinogram);
-		System.out.println(sinogram.getSpacing()[1]);
 		Grid1DComplex filter = new Grid1DComplex(sinogram.getWidth(), true);
 		int filter_size = filter.getSize()[0];
 		float filter_spacing = 1 / (spacing * filter_size);
@@ -121,7 +120,6 @@ public class Detector {
 			filter.setAtIndex(i, filter_spacing * i);
 			filter.setAtIndex(filter_size - i - 1, filter_spacing * i);
 		}
-		// filter.getRealSubGrid(0, filter_size).show();
 		for (int projection = 0; projection < sinogram.getHeight(); projection++) {
 			Grid1DComplex projection_complex = new Grid1DComplex(
 					sinogram.getSubGrid(projection), true);
@@ -170,7 +168,8 @@ public class Detector {
 						int asd = 1;
 						asd++;
 					}
-					double s = x * Math.cos(angle) + y * Math.sin(angle);
+					double s = x * Math.cos(Math.toRadians(angle)) + y
+							* Math.sin(Math.toRadians(angle));
 					double detector_index = sinogram.physicalToIndex(
 							projection, s)[1];
 					float value = InterpolationOperators.interpolateLinear(
@@ -180,5 +179,49 @@ public class Detector {
 			}
 		}
 		return result;
+	}
+
+	public Grid2D ramLakFilter(Grid2D sinogram) {
+		// initialize filter
+		Grid1D filter_spatial = new Grid1D(sinogram.getWidth());
+		filter_spatial.setSpacing(sinogram.getSpacing()[0]);
+		Grid1DComplex filter_frequency = new Grid1DComplex(filter_spatial, true);
+		filter_frequency.setAtIndex(0, 0.25f);
+		for (int i = 1; i < filter_frequency.getSize()[0] / 2; i++) {
+			if (i % 2 == 1) {
+				filter_frequency.setAtIndex(i,
+						(float) (-1 / (Math.pow(Math.PI, 2) * Math.pow(i, 2))));
+				filter_frequency.setAtIndex(filter_frequency.getSize()[0] - i,
+						(float) (-1 / (Math.pow(Math.PI, 2) * Math.pow(i, 2))));
+			} else {
+				filter_frequency.setAtIndex(i, 0f);
+				filter_frequency.setAtIndex(filter_frequency.getSize()[0] - i,
+						0f);
+			}
+		}
+		filter_frequency.transformForward();
+		sinogram = transpose(sinogram);
+		for (int projection = 0; projection < sinogram.getHeight(); projection++) {
+			Grid1DComplex projection_complex = new Grid1DComplex(
+					sinogram.getSubGrid(projection), true);
+			projection_complex.transformForward();
+			for (int i = 0; i < filter_frequency.getSize()[0]; i++) {
+				projection_complex.setRealAtIndex(
+						i,
+						projection_complex.getRealAtIndex(i)
+								* filter_frequency.getRealAtIndex(i));
+				projection_complex.setImagAtIndex(
+						i,
+						projection_complex.getImagAtIndex(i)
+								* filter_frequency.getRealAtIndex(i));
+			}
+			projection_complex.transformInverse();
+			for (int i = 0; i < sinogram.getWidth(); i++) {
+				sinogram.setAtIndex(i, projection,
+						projection_complex.getRealAtIndex(i));
+			}
+		}
+		sinogram = transpose(sinogram);
+		return sinogram;
 	}
 }
