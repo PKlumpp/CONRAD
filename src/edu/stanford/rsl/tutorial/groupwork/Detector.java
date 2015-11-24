@@ -1,20 +1,15 @@
 package edu.stanford.rsl.tutorial.groupwork;
 
-import com.jgoodies.forms.layout.Size;
-import com.sun.accessibility.internal.resources.accessibility;
 
 import edu.stanford.rsl.conrad.data.numeric.Grid1D;
 import edu.stanford.rsl.conrad.data.numeric.Grid1DComplex;
 import edu.stanford.rsl.conrad.data.numeric.Grid2D;
-import edu.stanford.rsl.conrad.data.numeric.Grid2DComplex;
 import edu.stanford.rsl.conrad.data.numeric.InterpolationOperators;
-import edu.stanford.rsl.conrad.data.numeric.NumericPointwiseOperators;
-import edu.stanford.rsl.conrad.utils.FFTUtil;
 
 public class Detector {
-	private int pixels;
-	private int projections;
-	private float spacing;
+	protected int pixels;
+	protected int projections;
+	protected float spacing;
 
 	public Detector(int pixels, int projections, float spacing) {
 		this.setPixels(pixels);
@@ -184,15 +179,15 @@ public class Detector {
 	public Grid2D ramLakFilter(Grid2D sinogram) {
 		// initialize filter
 		Grid1D filter_spatial = new Grid1D(sinogram.getWidth());
-		filter_spatial.setSpacing(sinogram.getSpacing()[0]);
+		filter_spatial.setSpacing(sinogram.getSpacing()[1]);
 		Grid1DComplex filter_frequency = new Grid1DComplex(filter_spatial, true);
-		filter_frequency.setAtIndex(0, 0.25f);
+		filter_frequency.setAtIndex(0, (float) (1 / (4 *  Math.pow(sinogram.getSpacing()[1], 2))));
 		for (int i = 1; i < filter_frequency.getSize()[0] / 2; i++) {
 			if (i % 2 == 1) {
 				filter_frequency.setAtIndex(i,
-						(float) (-1 / (Math.pow(Math.PI, 2) * Math.pow(i, 2))));
+						(float) (-1 / (Math.pow(Math.PI, 2) * Math.pow(i * sinogram.getSpacing()[1], 2))));
 				filter_frequency.setAtIndex(filter_frequency.getSize()[0] - i,
-						(float) (-1 / (Math.pow(Math.PI, 2) * Math.pow(i, 2))));
+						(float) (-1 / (Math.pow(Math.PI, 2) * Math.pow(i * sinogram.getSpacing()[1], 2))));
 			} else {
 				filter_frequency.setAtIndex(i, 0f);
 				filter_frequency.setAtIndex(filter_frequency.getSize()[0] - i,
