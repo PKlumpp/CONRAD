@@ -25,7 +25,7 @@ public class LineInBox {
 	public double[][] getBoxIntersects() {
 		double[][] boxIntersects = { { 0, 0 }, { 0, 0 } };
 		double intersect_y = intersect[1] - gradient * intersect[0];
-
+		
 		// First Point
 		
 		boxIntersects[0][1] = box_left * gradient + intersect_y;
