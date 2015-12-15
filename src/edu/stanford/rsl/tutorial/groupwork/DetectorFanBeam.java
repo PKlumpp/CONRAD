@@ -105,20 +105,49 @@ public class DetectorFanBeam extends Detector {
 
 		for (int projection = 0; projection < sinogram.getWidth(); projection++) {
 			for (int pixel = 0; pixel < sinogram.getHeight(); pixel++) {
-				float angleSin = 360f * projection / projections;
+				float angleSin = 180f * projection / projections;
 				double[] test = sinogram.indexToPhysical(projection, pixel);
 				float angleRay = (float) Math.toDegrees(Math.asin(sinogram
-						.indexToPhysical(projection, pixel)[1] / distanceSI));
+						.indexToPhysical(projection, pixel)[1] / distanceSD));
 				float angleFan = angleSin - angleRay;
 				float distanceFan = (float) (distanceSD * Math.tan(Math
 						.toRadians(angleRay)));
-				float projIndexFan = (int) Math.round(projections * angleFan
-						/ 360);
 				// INTERPOLATE!
+				if (projection == 0 && pixel == 420) {
+					int x = 0;
+				}
+				
+				if (angleFan < 0) {
+					angleFan += 360;
+				} else if (angleFan > 360) {
+					angleFan -= 360;
+				}
+
+				float projIndexFan = angleFan * (projections - 1) / 360f;
+
 				double[] indexFan = fanogram.physicalToIndex(projIndexFan,
 						distanceFan);
-				float value = InterpolationOperators.interpolateLinear(
-						fanogram, indexFan[0], indexFan[1]);
+				float value = 0f;
+				if (indexFan[0] > projections - 1 || indexFan[0] < 0) {
+					if (indexFan[0] > projections - 1) {
+						value = (float) (fanogram.getAtIndex(projections - 1,
+								(int) indexFan[1]) * (1 - indexFan[0]
+								- projections - 1))
+								+ (float) (fanogram.getAtIndex(0,
+										(int) indexFan[1]) * (indexFan[0]
+										- projections - 1));
+					} else {
+						value = (float) (fanogram.getAtIndex(projections - 1,
+								(int) indexFan[1]) * (Math.abs(indexFan[0])))
+								+ (float) (fanogram.getAtIndex(0,
+										(int) indexFan[1]) * (1 - Math
+										.abs(indexFan[0])));
+					}
+				} else {
+					value = InterpolationOperators.interpolateLinear(fanogram,
+							indexFan[0], indexFan[1]);
+				}
+
 				sinogram.setAtIndex(projection, pixel, value);
 			}
 		}

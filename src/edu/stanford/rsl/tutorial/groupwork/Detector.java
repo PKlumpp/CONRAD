@@ -178,7 +178,7 @@ public class Detector {
 
 	public Grid2D ramLakFilter(Grid2D sinogram) {
 		// initialize filter
-		Grid1D filter_spatial = new Grid1D(sinogram.getWidth());
+		Grid1D filter_spatial = new Grid1D(sinogram.getHeight());
 		filter_spatial.setSpacing(sinogram.getSpacing()[1]);
 		Grid1DComplex filter_frequency = new Grid1DComplex(filter_spatial, true);
 		filter_frequency.setAtIndex(0, (float) (1 / (4 *  Math.pow(sinogram.getSpacing()[1], 2))));
@@ -194,6 +194,7 @@ public class Detector {
 						0f);
 			}
 		}
+		
 		filter_frequency.transformForward();
 		sinogram = transpose(sinogram);
 		for (int projection = 0; projection < sinogram.getHeight(); projection++) {
