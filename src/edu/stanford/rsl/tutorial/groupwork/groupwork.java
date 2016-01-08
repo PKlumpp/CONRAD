@@ -18,6 +18,7 @@ public class groupwork {
 		DetectorFanBeam fanDetector = new DetectorFanBeam(500, 300, 1f, 2000,
 				2200);
 		Grid2D fanogram = fanDetector.getFanogram(phantom1);
+		fanogram.show();
 		Grid2D sinogram2 = fanDetector.rebinning(fanogram);
 		sinogram2.show();
 		sinogram.show();

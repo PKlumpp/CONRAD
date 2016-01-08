@@ -16,7 +16,7 @@ public class DetectorFanBeam extends Detector {
 	}
 
 	public Grid2D getFanogram(CustomPhantom phantom) {
-		float angleIncrement = getAngleIncrement360();
+		float angleIncrement = getAngleIncrement180();
 		Grid2D fanogram = new Grid2D(projections, pixels);
 		fanogram.setOrigin(0, (-pixels / 2 + 0.5) * spacing);
 		fanogram.setSpacing(1, spacing);
@@ -87,8 +87,8 @@ public class DetectorFanBeam extends Detector {
 
 	private float getAngleIncrement180() {
 		float detectorSize = pixels * spacing;
-		float fanAngle = (float) Math.toDegrees(Math.atan(detectorSize / 2
-				/ distanceSD));
+		float fanAngle = (float) (2 * Math.toDegrees(Math
+				.atan((detectorSize - 0.5) / 2 / distanceSD)));
 		float angleIncrement = (180 + fanAngle) / projections;
 		return angleIncrement;
 	}
@@ -102,28 +102,38 @@ public class DetectorFanBeam extends Detector {
 		Grid2D sinogram = new Grid2D(fanogram.getWidth(), fanogram.getHeight());
 		sinogram.setSpacing(fanogram.getSpacing());
 		sinogram.setOrigin(fanogram.getOrigin());
+		float detectorSize = pixels * spacing;
+		float fanAngle = (float) (2 * Math.toDegrees(Math
+				.atan((detectorSize - 1) / 2 / distanceSD)));
 
 		for (int projection = 0; projection < sinogram.getWidth(); projection++) {
 			for (int pixel = 0; pixel < sinogram.getHeight(); pixel++) {
 				float angleSin = 180f * projection / projections;
 				double[] test = sinogram.indexToPhysical(projection, pixel);
 				float angleRay = (float) Math.toDegrees(Math.asin(sinogram
-						.indexToPhysical(projection, pixel)[1] / distanceSD));
+						.indexToPhysical(projection, pixel)[1] / distanceSI));
 				float angleFan = angleSin - angleRay;
 				float distanceFan = (float) (distanceSD * Math.tan(Math
 						.toRadians(angleRay)));
 				// INTERPOLATE!
-				if (projection == 0 && pixel == 420) {
+				if (projection == 0 && pixel >= 275) {
 					int x = 0;
 				}
-				
+
 				if (angleFan < 0) {
-					angleFan += 360;
-				} else if (angleFan > 360) {
-					angleFan -= 360;
+					angleFan = angleFan + 180 - (2 * angleRay);
+					angleRay = -angleRay;
+					distanceFan = (float) (distanceSD * Math.tan(Math
+							.toRadians(angleRay)));
+				} else if (angleFan > 180 + fanAngle) {
+					angleFan = angleFan - 180 + (2 * angleRay);
+					angleRay = -angleRay;
+					distanceFan = (float) (distanceSD * Math.tan(Math
+							.toRadians(angleRay)));
 				}
 
-				float projIndexFan = angleFan * (projections - 1) / 360f;
+				float projIndexFan = angleFan * (projections - 1)
+						/ (180 + fanAngle);
 
 				double[] indexFan = fanogram.physicalToIndex(projIndexFan,
 						distanceFan);
