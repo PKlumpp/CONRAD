@@ -16,7 +16,7 @@ public class DetectorFanBeam extends Detector {
 	}
 
 	public Grid2D getFanogram(CustomPhantom phantom) {
-		float angleIncrement = getAngleIncrement180();
+		float angleIncrement = getAngleIncrement360();
 		Grid2D fanogram = new Grid2D(projections, pixels);
 		fanogram.setOrigin(0, (-pixels / 2 + 0.5) * spacing);
 		fanogram.setSpacing(1, spacing);
@@ -98,7 +98,7 @@ public class DetectorFanBeam extends Detector {
 		return angleIncrement;
 	}
 
-	public Grid2D rebinning(Grid2D fanogram) {
+	public Grid2D rebinning180(Grid2D fanogram) {
 		Grid2D sinogram = new Grid2D(fanogram.getWidth(), fanogram.getHeight());
 		sinogram.setSpacing(fanogram.getSpacing());
 		sinogram.setOrigin(fanogram.getOrigin());
@@ -119,7 +119,7 @@ public class DetectorFanBeam extends Detector {
 				if (projection == 0 && pixel >= 275) {
 					int x = 0;
 				}
-
+/*
 				if (angleFan < 0) {
 					angleFan = angleFan + 180 - (2 * angleRay);
 					angleRay = -angleRay;
@@ -131,9 +131,14 @@ public class DetectorFanBeam extends Detector {
 					distanceFan = (float) (distanceSD * Math.tan(Math
 							.toRadians(angleRay)));
 				}
-
+*/
+				if (angleFan < 0) {
+					angleFan += 360;
+				} else if (angleFan > 360) {
+					angleFan -= 360;
+				}
 				float projIndexFan = angleFan * (projections - 1)
-						/ (180 + fanAngle);
+						/ 360;   // CHANGED FOR 360 DEGREES!!!
 
 				double[] indexFan = fanogram.physicalToIndex(projIndexFan,
 						distanceFan);
