@@ -1,10 +1,22 @@
 package edu.stanford.rsl.tutorial.groupwork;
 
 
+import java.io.IOException;
+import java.nio.FloatBuffer;
+
+import com.jogamp.opencl.CLBuffer;
+import com.jogamp.opencl.CLCommandQueue;
+import com.jogamp.opencl.CLContext;
+import com.jogamp.opencl.CLDevice;
+import com.jogamp.opencl.CLKernel;
+import com.jogamp.opencl.CLProgram;
+import com.jogamp.opencl.CLMemory.Mem;
+
 import edu.stanford.rsl.conrad.data.numeric.Grid1D;
 import edu.stanford.rsl.conrad.data.numeric.Grid1DComplex;
 import edu.stanford.rsl.conrad.data.numeric.Grid2D;
 import edu.stanford.rsl.conrad.data.numeric.InterpolationOperators;
+import edu.stanford.rsl.conrad.opencl.OpenCLUtil;
 
 public class Detector {
 	protected int pixels;
@@ -219,5 +231,56 @@ public class Detector {
 		}
 		sinogram = transpose(sinogram);
 		return sinogram;
+	}
+	
+	public Grid2D clBackprojection(Grid2D sinogram, Grid2D result, int worksize) {
+		CLContext context = OpenCLUtil.createContext();
+		CLDevice[] devices = context.getDevices();
+		CLDevice device = context.getMaxFlopsDevice();
+		System.out.println("Device: " + device);
+
+		CLProgram program = null;
+		try {
+			program = context.createProgram(
+					groupwork.class.getResourceAsStream("kernel_ctReco.cl"))
+					.build();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			System.exit(-1);
+		}
+		int cols_rows = result.getHeight();
+		
+
+		CLBuffer<FloatBuffer> input = context.createFloatBuffer(
+				sinogram.getHeight() * sinogram.getWidth(), Mem.READ_ONLY);
+		for (int i = 0; i < sinogram.getHeight() * sinogram.getWidth(); i++) {
+			input.getBuffer().put(sinogram.getBuffer()[i]);
+		}
+		input.getBuffer().rewind();
+
+		CLBuffer<FloatBuffer> output = context.createFloatBuffer(
+				cols_rows * cols_rows, Mem.WRITE_ONLY);
+
+		int localWorkSize = Math.min(device.getMaxWorkGroupSize(), worksize);
+		int globalWorkSize = OpenCLUtil.roundUp(localWorkSize, cols_rows * cols_rows);
+
+		CLKernel kernel = program.createCLKernel("backprojectParallel");
+		CLCommandQueue queue = device.createCommandQueue();
+		kernel.putArg(input).putArg(output).putArg(projections).putArg(pixels).putArg(cols_rows);
+		queue.putWriteBuffer(input, true).finish()
+				.put1DRangeKernel(kernel, 0, globalWorkSize, localWorkSize)
+				.finish().putReadBuffer(output, true).finish();
+		for (int i = 0; i < cols_rows * cols_rows; i++) {
+			result.getBuffer()[i] = output.getBuffer().get();
+		}
+
+		queue.release();
+		input.release();
+		output.release();
+		kernel.release();
+		program.release();
+		context.release();
+		return result;
 	}
 }
